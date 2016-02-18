@@ -250,7 +250,7 @@ int getChunk(char* chunk, int pos, FILE* gen) {
 void findMatch(Primer* p, char* chunk, int pos,
     Match* dummy, int minLen, int maxLen, float minScore) {
   // check for first primer match (p->seq[0] or p->seq[3])
-  for 
+  //for 
   // p->fmax, p->rmax are maximum matches
 
   // check for second primer match
