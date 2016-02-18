@@ -53,10 +53,7 @@ typedef struct match {
 
 typedef struct primer {
   char* name;
-  char* fwd;
-  char* rev;
-  char* frc;
-  char* rrc;
+  char* seq[4];
   int fmax;    // max. match score for fwd primer
   int rmax;    // max. match score for rev primer
   Match* first;

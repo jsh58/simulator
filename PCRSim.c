@@ -56,10 +56,8 @@ void freeMemory(Primer* head) {
   Primer* temp;
   for (Primer* p = head; p != NULL; ) {
     free(p->name);
-    free(p->fwd);
-    free(p->rev);
-    free(p->frc);
-    free(p->rrc);
+    for (int i = 0; i < 4; i++)
+      free(p->seq[i]);
     temp = p;
     p = p->next;
     free(temp);
@@ -241,13 +239,21 @@ int getChunk(char* chunk, int pos, FILE* gen) {
     } else if (ch != '\n')
       chunk[i++] = toupper(ch);
   }
-//printf("null byte in position %d\n", i);
   chunk[i] = '\0';
   return 1;
 }
 
 
-void findMatch(Primer* p, char* chunk) {
+/* void findMatch()
+ * Find a primer match to the genome chunk.
+ */
+void findMatch(Primer* p, char* chunk, int pos,
+    Match* dummy, int minLen, int maxLen, float minScore) {
+  // check for first primer match (p->seq[0] or p->seq[3])
+  for 
+  // p->fmax, p->rmax are maximum matches
+
+  // check for second primer match
 
 }
 
@@ -260,6 +266,7 @@ int readFile(FILE* out, FILE* gen, Primer* head,
 
   char* chunk = (char*) memalloc(1 + CHUNK_SIZE);
   char* chrom = (char*) memalloc(1 + MAX_PRIM);
+  Match* dummy = (Match*) memalloc(sizeof(Match));
 
   getLine(line, MAX_SIZE, gen);
   while (line[0] == '>') {
@@ -271,17 +278,19 @@ int readFile(FILE* out, FILE* gen, Primer* head,
       chrom[i] = line[i + 1];
     chrom[i] = '\0';
 
-    chunk[0] = '\0';    // reset chunk
+    chunk[0] = '\0';     // reset chunk
+    dummy = NULL;        // reset list of matches for next chunk
 
     int count = 0;
+    int pos = 0;
     int next = 1;
     while (next) {
 
       // load next chunk of genome
       next = getChunk(chunk, CHUNK_SIZE - MAX_PRIM, gen);
 
-for (Primer* p = head; p != NULL; p = p->next)
-  findMatch(p, chunk);
+      for (Primer* p = head; p != NULL; p = p->next)
+        findMatch(p, chunk, pos, dummy, minLen, maxLen, minScore);
 
 //printf("chunk is %s\n%s\n", chunk, chrom);
 //free(chrom);
@@ -289,8 +298,10 @@ for (Primer* p = head; p != NULL; p = p->next)
 
 //printf("chunk is\n%s\n", chunk);
 //while (!getchar()) ;
+      pos += CHUNK_SIZE - MAX_PRIM;
       count++;
     }
+
 printf("chromosome %s, chunks of %dbp: %d\n", chrom, CHUNK_SIZE, count);
 printf("last chunk is %s (%dbp)\n", chunk, (int) strlen(chunk));
 while (!getchar()) ;
@@ -338,9 +349,9 @@ Primer* loadSeqs(FILE* prim) {
 
     // load name and sequence
     char* name = strtok(line, CSV);
-    char* seq = strtok(NULL, CSV);
+    char* fwd = strtok(NULL, CSV);
     char* rev = strtok(NULL, DEL);
-    if (name == NULL || seq == NULL || rev == NULL) {
+    if (name == NULL || fwd == NULL || rev == NULL) {
       error("", ERRPRIM);
       continue;
     }
@@ -353,21 +364,21 @@ Primer* loadSeqs(FILE* prim) {
     // create primer
     Primer* p = (Primer*) memalloc(sizeof(Primer));
     p->name = (char*) memalloc(1 + strlen(name));
-    p->fwd = (char*) memalloc(1 + strlen(seq));
-    p->frc = (char*) memalloc(1 + strlen(seq));
-    p->rev = (char*) memalloc(1 + strlen(rev));
-    p->rrc = (char*) memalloc(1 + strlen(rev));
+    p->seq[0] = (char*) memalloc(1 + strlen(fwd));  // fwd primer
+    p->seq[1] = (char*) memalloc(1 + strlen(fwd));  // rev-comp of fwd primer
+    p->seq[2] = (char*) memalloc(1 + strlen(rev));  // rev primer
+    p->seq[3] = (char*) memalloc(1 + strlen(rev));  // rev-comp of rev primer
     strcpy(p->name, name);
-    strcpy(p->fwd, seq);
-    strcpy(p->rev, rev);
+    strcpy(p->seq[0], fwd);
+    strcpy(p->seq[2], rev);
 
     // save sequence rc's
-    revComp(p->fwd, p->frc);
-    revComp(p->rev, p->rrc);
+    revComp(p->seq[0], p->seq[1]);
+    revComp(p->seq[2], p->seq[3]);
 
     // calculate max. primer match scores
-    p->fmax = calcMax(p->fwd);
-    p->rmax = calcMax(p->rev);
+    p->fmax = calcMax(p->seq[0]);
+    p->rmax = calcMax(p->seq[2]);
 
     p->next = NULL;
     if (head == NULL)
